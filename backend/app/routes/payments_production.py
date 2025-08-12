@@ -52,24 +52,24 @@ def save_payments(payments):
 def generate_fiserv_hash(params: dict, shared_secret: str) -> str:
     """
     Generate HMAC-SHA256 hash in Base64 format - EXACTLY like test.html
-    1. Sort ALL parameters alphabetically by key
+    1. Sort ALL parameters alphabetically by key (excluding hash fields)
     2. Join values with pipe separator (|)
     3. Generate HMAC-SHA256 with shared secret as key
     4. Encode as Base64
     """
-    # Remove hash fields if present
+    # Remove hash fields if present - CRITICAL: hash should not be in the data to hash
     params_to_hash = {k: v for k, v in params.items() 
-                      if k not in ['hashExtended', 'hash', 'response_hash']}
+                      if k not in ['hashExtended', 'hash', 'response_hash', 'notification_hash']}
     
     # Sort parameters alphabetically
     sorted_keys = sorted(params_to_hash.keys())
     
-    # Join values with pipe separator
+    # Join values with pipe separator - CRITICAL: Fiserv expects pipe separator
     values = [str(params_to_hash[key]) for key in sorted_keys]
     data_to_sign = '|'.join(values)
     
-    logger.info(f"Sorted keys: {sorted_keys}")
-    logger.info(f"Data to sign: {data_to_sign}")
+    logger.info(f"Sorted keys ({len(sorted_keys)} fields): {sorted_keys}")
+    logger.info(f"Data to sign: {data_to_sign[:100]}..." if len(data_to_sign) > 100 else f"Data to sign: {data_to_sign}")
     
     # Generate HMAC-SHA256
     signature = hmac.new(
@@ -78,7 +78,7 @@ def generate_fiserv_hash(params: dict, shared_secret: str) -> str:
         hashlib.sha256
     ).digest()
     
-    # Encode as Base64 (like in test.html)
+    # Encode as Base64 (like in test.html) - CRITICAL: Must be Base64, not hex
     base64_hash = base64.b64encode(signature).decode('utf-8')
     
     logger.info(f"Generated Base64 hash: {base64_hash}")
