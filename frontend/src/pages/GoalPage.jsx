@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { ArrowLeftIcon, QrCodeIcon } from '@heroicons/react/24/outline'
 import { BuildingLibraryIcon, HeartIcon, FireIcon } from '@heroicons/react/24/outline'
+import { apiCall } from '../utils/api'
 
 export default function GoalPage() {
   const { goalId } = useParams()
@@ -26,18 +27,10 @@ export default function GoalPage() {
 
   const loadGoalData = async () => {
     try {
-      const [goalResponse, orgResponse] = await Promise.all([
-        fetch(`/api/organization/goal/${goalId}`),
-        fetch('/api/organization')
+      const [goalData, orgData] = await Promise.all([
+        apiCall(`/organization/goal/${goalId}`),
+        apiCall('/organization')
       ])
-      
-      if (!goalResponse.ok) {
-        navigate('/')
-        return
-      }
-      
-      const goalData = await goalResponse.json()
-      const orgData = await orgResponse.json()
       
       setGoal(goalData)
       setOrganization(orgData)
@@ -93,18 +86,19 @@ export default function GoalPage() {
     setSubmitting(true)
 
     try {
-      const response = await fetch('/api/payments/initiate', {
+      const response = await fetch(`${window.location.origin}/bramkamvp/api/payments/initiate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           goal_id: goalId,
+          organization_id: organization?.id || 'misjonarze',
           amount: finalAmount,
           donor_name: donorName || null,
           donor_email: donorEmail || null,
           message: message || null,
-          payment_method: 'card'
+          is_anonymous: false
         })
       })
 
@@ -115,12 +109,32 @@ export default function GoalPage() {
       const data = await response.json()
       console.log('Payment response:', data) // Debug log
       
-      // Redirect to payment method selection page
-      if (data.payment_url) {
+      // Handle Fiserv form submission
+      if (data.form_url && data.form_data) {
+        console.log('Creating form for Fiserv submission') // Debug log
+        
+        // Create and submit form dynamically
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = data.form_url
+        
+        // Add all form fields from backend
+        Object.entries(data.form_data).forEach(([key, value]) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = key
+          input.value = value
+          form.appendChild(input)
+        })
+        
+        document.body.appendChild(form)
+        form.submit()
+      } else if (data.payment_url) {
+        // Fallback for old payment_url format
         console.log('Redirecting to:', data.payment_url) // Debug log
         window.location.href = data.payment_url
       } else {
-        throw new Error('No payment URL received')
+        throw new Error('No payment form data received')
       }
     } catch (error) {
       console.error('Payment error:', error)

@@ -10,7 +10,7 @@ import ThankYouPage from './pages/ThankYouPage'
 
 function App() {
   return (
-    <Router>
+    <Router basename="/bramkamvp">
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/cel/:goalId" element={<GoalPage />} />

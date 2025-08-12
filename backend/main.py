@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 
 from app.routes import organization
-from app.routes.payments_working import router as payments_router
+from app.routes.payments_production import router as payments_router
 
 # Load environment variables
 load_dotenv()

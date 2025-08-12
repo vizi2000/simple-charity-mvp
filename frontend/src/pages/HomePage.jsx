@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../components/Layout'
 import { BuildingLibraryIcon, HeartIcon, FireIcon } from '@heroicons/react/24/outline'
+import { apiCall } from '../utils/api'
 
 export default function HomePage() {
   const [organization, setOrganization] = useState(null)
@@ -14,13 +15,10 @@ export default function HomePage() {
 
   const loadData = async () => {
     try {
-      const [orgResponse, statsResponse] = await Promise.all([
-        fetch('/api/organization'),
-        fetch('/api/organization/stats')
+      const [orgData, statsData] = await Promise.all([
+        apiCall('/organization'),
+        apiCall('/organization/stats')
       ])
-      
-      const orgData = await orgResponse.json()
-      const statsData = await statsResponse.json()
       
       setOrganization(orgData)
       setStats(statsData)
@@ -70,14 +68,14 @@ export default function HomePage() {
       {/* Hero Section with Background */}
       <div 
         className="relative bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url('/src/assets/Mis - Tarnów - tło.png')` }}
+        style={{ backgroundImage: `url('/bramkamvp/assets/mist_3.png')` }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-primary/80 to-secondary/90"></div>
         
         <div className="relative container mx-auto px-4 py-16 md:py-24">
           <div className="text-center text-white max-w-3xl mx-auto">
             <img 
-              src="/src/assets/mist_male_logo.png" 
+              src="/bramkamvp/assets/mist_male_logo-DBJx8Hn_.png" 
               alt="Logo" 
               className="h-24 md:h-32 mx-auto mb-6"
             />
