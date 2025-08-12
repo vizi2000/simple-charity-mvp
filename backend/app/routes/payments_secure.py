@@ -76,7 +76,7 @@ class InitiatePaymentRequest(BaseModel):
     goal_id: str
     amount: float = Field(gt=0, le=100000)
     donor_name: Optional[str] = "Anonimowy"
-    donor_email: Optional[str] = None
+    donor_email: str = Field(..., regex=r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')  # Email is now required
     message: Optional[str] = None
     is_anonymous: bool = False
 
@@ -104,13 +104,14 @@ async def initiate_payment(request: InitiatePaymentRequest):
         fail_url = f"{base_url}/payment/failure?oid={order_id}"
         notification_url = f"{webhook_url}/api/webhooks/fiserv/s2s"  # Critical S2S endpoint
         
-        # Prepare customer data if not anonymous
-        customer_data = None
-        if not request.is_anonymous and request.donor_email:
-            customer_data = {
-                'email': request.donor_email,
-                'name': request.donor_name
-            }
+        # Prepare customer data (email is always required now)
+        customer_data = {
+            'email': request.donor_email  # Email is required, so it will always be present
+        }
+        
+        # Add name only if not anonymous
+        if not request.is_anonymous and request.donor_name:
+            customer_data['name'] = request.donor_name
         
         # Generate secure form data with hash
         form_data = security.prepare_payment_form_data(

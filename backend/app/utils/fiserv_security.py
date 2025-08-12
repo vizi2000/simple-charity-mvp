@@ -124,12 +124,18 @@ class FiservSecurity:
             if not re.match(r'^[A-Za-z0-9\-_]+$', str(data['order_id'])):
                 errors.append('Invalid order ID format')
         
-        # Validate email if provided
-        if 'email' in data and data['email']:
-            import re
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-            if not re.match(email_pattern, data['email']):
-                errors.append('Invalid email format')
+        # Validate email (now required)
+        if 'donor_email' not in data and 'email' not in data:
+            errors.append('Email is required')
+        else:
+            email = data.get('donor_email') or data.get('email')
+            if not email:
+                errors.append('Email cannot be empty')
+            else:
+                import re
+                email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                if not re.match(email_pattern, email):
+                    errors.append('Invalid email format')
         
         return errors
     
@@ -174,12 +180,24 @@ class FiservSecurity:
         # Get transaction datetime
         txn_datetime = self.get_transaction_datetime()
         
-        # Build parameters dictionary
+        # Build CORE parameters for hash calculation (only required fields)
+        hash_params = {
+            'chargetotal': amount_str,
+            'currency': currency,
+            'storename': self.store_id,
+            'txndatetime': txn_datetime
+        }
+        
+        # Generate hash ONLY from core fields
+        hash_value = self.generate_hash(hash_params)
+        
+        # Build COMPLETE form parameters (including optional fields)
         params = {
             'chargetotal': amount_str,
             'checkoutoption': 'combinedpage',
             'currency': currency,
             'hash_algorithm': 'HMACSHA256',
+            'hashExtended': hash_value,  # Add the hash here
             'oid': order_id,
             'paymentMethod': payment_method,
             'responseFailURL': fail_url,
@@ -191,7 +209,7 @@ class FiservSecurity:
             'txntype': 'sale'
         }
         
-        # Add customer data if provided
+        # Add customer data if provided (these are NOT included in hash)
         if customer_data:
             if 'email' in customer_data:
                 params['bmail'] = customer_data['email']
@@ -205,12 +223,6 @@ class FiservSecurity:
                 params['bzip'] = customer_data['postal_code']
             if 'country' in customer_data:
                 params['bcountry'] = customer_data['country']
-        
-        # Generate hash
-        hash_value = self.generate_hash(params)
-        
-        # Add hash to form data
-        params['hashExtended'] = hash_value
         
         return params
     
