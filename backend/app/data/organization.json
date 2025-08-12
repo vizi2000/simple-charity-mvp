@@ -1,0 +1,38 @@
+{
+  "id": "misjonarze-tarnow",
+  "name": "Misjonarze Parafia Świętej Rodziny",
+  "description": "Misjonarze świętego Wincentego a Paulo",
+  "location": "Tarnów",
+  "contact_phone": "790 525 400",
+  "contact_email": "kontakt@misjonarze-tarnow.pl",
+  "website": "https://misjonarze-tarnow.pl",
+  "logo_url": "/assets/mist_male_logo.png",
+  "primary_color": "#4B6A9B",
+  "secondary_color": "#2C4770",
+  "goals": [
+    {
+      "id": "church",
+      "name": "Ofiara na kościół",
+      "description": "Wsparcie na utrzymanie i renowację kościoła parafialnego",
+      "icon": "church",
+      "target_amount": 100000,
+      "collected_amount": 45574.5
+    },
+    {
+      "id": "poor",
+      "name": "Ofiara na ubogich",
+      "description": "Pomoc potrzebującym w naszej wspólnocie parafialnej",
+      "icon": "heart",
+      "target_amount": 50000,
+      "collected_amount": 24918.0
+    },
+    {
+      "id": "candles",
+      "name": "Ofiara za świeczki intencyjne",
+      "description": "Intencje modlitewne za zmarłych i żyjących",
+      "icon": "candle",
+      "target_amount": 30000,
+      "collected_amount": 18750
+    }
+  ]
+}

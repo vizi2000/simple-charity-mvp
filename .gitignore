@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+.eggs/
+*.egg
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.production.local
+.env.development.local
+.env.test.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build directories
+dist/
+build/
+*.log
+
+# Data files (may contain sensitive info)
+backend/app/data/*.json
+!backend/app/data/organization.json
+
+# Deployment files with sensitive data
+deploy/*.env
+deploy/deploy.sh
+
+# Test files
+backend/test_*.py
+backend/test_*.html
+backend/test_*.json
+backend/*.html
+backend/*.json
+!backend/app/data/organization.json
+
+# Backup files
+*.bak
+*.backup
+
+# Python cache
+backend/venv/
+backend/venv2/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+
+# Frontend build
+frontend/dist/
+frontend/.vite/

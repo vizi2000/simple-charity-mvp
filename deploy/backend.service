@@ -1,0 +1,23 @@
+[Unit]
+Description=Simple Payment Gate Backend API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/simplepaymentgate/backend
+Environment="PATH=/var/www/simplepaymentgate/backend/venv/bin"
+ExecStart=/var/www/simplepaymentgate/backend/venv/bin/python main.py
+Restart=always
+RestartSec=10
+
+# Environment variables
+EnvironmentFile=/var/www/simplepaymentgate/.env
+
+# Logging
+StandardOutput=append:/var/log/simplepaymentgate/backend.log
+StandardError=append:/var/log/simplepaymentgate/backend-error.log
+
+[Install]
+WantedBy=multi-user.target
