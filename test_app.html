@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Aplikacji</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Aplikacji Charity</h1>
+    
+    <div class="test-section info">
+        <h2>1. Test API</h2>
+        <button onclick="testAPI()">Test API Endpoints</button>
+        <div id="api-results"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h2>2. Test Płatności</h2>
+        <button onclick="testPayment()">Test Payment Initiation</button>
+        <div id="payment-results"></div>
+    </div>
+    
+    <div class="test-section info">
+        <h2>3. Podgląd Aplikacji</h2>
+        <p>URL: <a href="https://borgtools.ddns.net/bramkamvp/" target="_blank">https://borgtools.ddns.net/bramkamvp/</a></p>
+        <iframe src="https://borgtools.ddns.net/bramkamvp/" id="app-frame"></iframe>
+    </div>
+    
+    <div class="test-section info">
+        <h2>4. Console Errors</h2>
+        <button onclick="checkConsole()">Check for Errors</button>
+        <pre id="console-output"></pre>
+    </div>
+    
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('api-results');
+            resultsDiv.innerHTML = '<p>Testing API endpoints...</p>';
+            
+            const endpoints = [
+                '/api/organization',
+                '/api/organization/goals',
+                '/api/organization/goal/church'
+            ];
+            
+            let html = '<ul>';
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(`https://borgtools.ddns.net/bramkamvp${endpoint}`);
+                    const data = await response.json();
+                    html += `<li class="success">✅ ${endpoint} - OK (${Object.keys(data).length} fields)</li>`;
+                } catch (error) {
+                    html += `<li class="error">❌ ${endpoint} - ${error.message}</li>`;
+                }
+            }
+            html += '</ul>';
+            resultsDiv.innerHTML = html;
+        }
+        
+        async function testPayment() {
+            const resultsDiv = document.getElementById('payment-results');
+            resultsDiv.innerHTML = '<p>Testing payment initiation...</p>';
+            
+            try {
+                const response = await fetch('http://192.168.100.159:8000/api/payments/initiate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: 10.00,
+                        organization_id: 'misjonarze',
+                        goal_id: 'church',
+                        donor_name: 'Browser Test',
+                        donor_email: 'browser@test.com'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.form_data && data.form_data.checkoutoption) {
+                    resultsDiv.innerHTML = `
+                        <div class="success">
+                            <p>✅ Payment initiated successfully!</p>
+                            <p>Order ID: ${data.order_id}</p>
+                            <p>Checkoutoption: ${data.form_data.checkoutoption}</p>
+                            <p>Hash: ${data.form_data.hash.substring(0, 20)}...</p>
+                        </div>
+                    `;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <div class="error">
+                            <p>⚠️ Payment initiated but checkoutoption missing!</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+        
+        function checkConsole() {
+            const iframe = document.getElementById('app-frame');
+            const output = document.getElementById('console-output');
+            
+            try {
+                // Try to access iframe console (may be blocked by CORS)
+                output.textContent = 'Console check:\n\n';
+                output.textContent += 'If the app shows a white screen, check:\n';
+                output.textContent += '1. Browser console for errors (F12)\n';
+                output.textContent += '2. Network tab for failed requests\n';
+                output.textContent += '3. React DevTools for component errors\n';
+            } catch (error) {
+                output.textContent = 'Cannot access iframe console due to CORS. Please check browser console directly.';
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = () => {
+            setTimeout(testAPI, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -117,36 +117,37 @@ async def initiate_payment(request: InitiatePaymentRequest):
         # In production, these should use HTTPS
         base_url = "https://borgtools.ddns.net/bramkamvp"
         
-        # Build form parameters - EXACTLY like test.html
+        # CRITICAL: Build ALL form parameters FIRST, BEFORE generating hash
+        # This ensures the hash includes every single field being sent
         form_params = {
-            'chargetotal': amount_str,
-            'checkoutoption': 'combinedpage',
-            'currency': FISERV_CONFIG['currency'],
-            'hash_algorithm': FISERV_CONFIG['hash_algorithm'],
-            'oid': order_id,
-            'paymentMethod': 'M',  # Mixed (card + BLIK)
-            'responseFailURL': f'{base_url}/payment/failure',
-            'responseSuccessURL': f'{base_url}/payment/success',
-            'storename': FISERV_CONFIG['storename'],
+            'txntype': 'sale',
             'timezone': FISERV_CONFIG['timezone'],
             'txndatetime': txn_datetime,
-            'txntype': 'sale'
+            'hash_algorithm': FISERV_CONFIG['hash_algorithm'],
+            'storename': FISERV_CONFIG['storename'],
+            'chargetotal': amount_str,
+            'currency': FISERV_CONFIG['currency'],
+            'checkoutoption': 'combinedpage',
+            'oid': order_id,
+            'paymentMethod': 'M',  # Mixed (card + BLIK)
+            'responseSuccessURL': f'{base_url}/payment/success',
+            'responseFailURL': f'{base_url}/payment/failure',
+            'transactionNotificationURL': f'{base_url}/api/payments/webhooks/fiserv/s2s'
         }
         
-        # Add optional fields if not anonymous
+        # Add optional customer fields if not anonymous
+        # These MUST be added BEFORE hash generation
         if not request.is_anonymous:
             if request.donor_email:
                 form_params['bmail'] = request.donor_email
             if request.donor_name:
                 form_params['bname'] = request.donor_name
         
-        # Add S2S notification URL (must be HTTPS in production)
-        form_params['transactionNotificationURL'] = f'{base_url}/api/payments/webhooks/fiserv/s2s'
-        
-        # Generate hash using ALL fields
+        # NOW generate hash with ALL fields that will be sent
+        # The hash MUST include every field in form_params
         hash_value = generate_fiserv_hash(form_params, FISERV_CONFIG['shared_secret'])
         
-        # Add hash to form data as 'hashExtended' (IMPORTANT!)
+        # Add hash to form data as 'hashExtended' AFTER generating it
         form_params['hashExtended'] = hash_value
         
         # Create payment record

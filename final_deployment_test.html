@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>🎉 Test Wdrożenia - HMAC-SHA256 Fixed</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .status-badge {
+            background: #22c55e;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: inline-block;
+            margin: 0 auto 30px;
+            display: block;
+            width: fit-content;
+            text-align: center;
+        }
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 16px;
+        }
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin: 5px 0;
+            color: #555;
+        }
+        .test-cards {
+            background: #fff8e1;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #ffa726;
+        }
+        .test-cards h3 {
+            margin-top: 0;
+            color: #f57c00;
+        }
+        .card-detail {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+        }
+        .amount-select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.3s;
+            margin-top: 20px;
+        }
+        button:hover {
+            transform: scale(1.02);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .loading { background: #fff3cd; color: #856404; }
+        .timestamp {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Test Płatności Fiserv</h1>
+        <div class="status-badge">✅ HMAC-SHA256 WDROŻONY</div>
+        
+        <div class="info-box">
+            <h3>📍 Informacje o systemie:</h3>
+            <ul>
+                <li><strong>Serwer:</strong> 192.168.100.159</li>
+                <li><strong>Frontend:</strong> https://borgtools.ddns.net/bramkamvp/</li>
+                <li><strong>Backend:</strong> Port 8000</li>
+                <li><strong>Status:</strong> ✅ Zaktualizowany</li>
+            </ul>
+        </div>
+        
+        <div class="test-cards">
+            <h3>💳 Karty testowe Fiserv:</h3>
+            <div class="card-detail">
+                <strong>DEBIT (Zatwierdzona):</strong><br>
+                Numer: 4410947715337430<br>
+                Data: 12/26 | CVV: 287
+            </div>
+            <div class="card-detail">
+                <strong>BLIK (Zatwierdzony):</strong><br>
+                Kod: 777777
+            </div>
+        </div>
+        
+        <select class="amount-select" id="amount">
+            <option value="10">10 PLN - Mała darowizna</option>
+            <option value="25" selected>25 PLN - Standardowa darowizna</option>
+            <option value="50">50 PLN - Większa darowizna</option>
+            <option value="100">100 PLN - Hojna darowizna</option>
+            <option value="250">250 PLN - Bardzo hojna darowizna</option>
+        </select>
+        
+        <button onclick="initiatePayment()" id="payBtn">
+            💳 Rozpocznij Test Płatności
+        </button>
+        
+        <div id="result"></div>
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+    
+    <script>
+        function updateTimestamp() {
+            const now = new Date();
+            const formatted = now.toLocaleString('pl-PL', { 
+                timeZone: 'Europe/Warsaw',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('timestamp').textContent = `Czas lokalny: ${formatted} (Europe/Warsaw)`;
+        }
+        
+        updateTimestamp();
+        setInterval(updateTimestamp, 1000);
+        
+        async function initiatePayment() {
+            const btn = document.getElementById('payBtn');
+            const resultDiv = document.getElementById('result');
+            const amount = document.getElementById('amount').value;
+            
+            btn.disabled = true;
+            resultDiv.className = 'result loading';
+            resultDiv.innerHTML = '⏳ Inicjowanie płatności...';
+            
+            try {
+                const response = await fetch('http://192.168.100.159:8000/api/payments/initiate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount: parseFloat(amount),
+                        organization_id: 'misjonarze',
+                        goal_id: 'general',
+                        donor_name: 'Test User',
+                        donor_email: 'test@example.com'
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.form_url && data.form_data) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `✅ Sukces! Order ID: ${data.order_id}<br>Przekierowywanie do Fiserv...`;
+                    
+                    // Create form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = data.form_url;
+                    form.target = '_blank'; // Open in new tab for testing
+                    
+                    // Add all form fields
+                    for (const [key, value] of Object.entries(data.form_data)) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = key;
+                        input.value = value;
+                        form.appendChild(input);
+                    }
+                    
+                    document.body.appendChild(form);
+                    
+                    // Submit after short delay
+                    setTimeout(() => {
+                        form.submit();
+                        document.body.removeChild(form);
+                        btn.disabled = false;
+                        
+                        setTimeout(() => {
+                            resultDiv.innerHTML += '<br>📋 Formularz wysłany! Sprawdź nową kartę.';
+                        }, 1000);
+                    }, 1500);
+                } else {
+                    throw new Error('Nieprawidłowa odpowiedź z API');
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Błąd: ${error.message}`;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Końcowy Test Płatności - BramkaMVP</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .status-box {
+            background: #f8f9fa;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .status-box.error {
+            border-left-color: #f44336;
+            background: #ffebee;
+        }
+        .status-box.warning {
+            border-left-color: #ff9800;
+            background: #fff3e0;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            margin: 20px 0;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .info-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .info-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        .test-cards {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .log-output {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 20px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Końcowy Test Płatności</h1>
+        <p class="subtitle">Wersja produkcyjna z pełną integracją Fiserv</p>
+        
+        <div class="status-box">
+            <strong>✅ Status systemu:</strong> Gotowy do testu
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Środowisko</div>
+                <div class="info-value">TEST (Fiserv)</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Kwota</div>
+                <div class="info-value">10.00 PLN</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Organizacja</div>
+                <div class="info-value">Misjonarze</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Cel</div>
+                <div class="info-value">Ofiara na kościół</div>
+            </div>
+        </div>
+
+        <button class="btn" id="paymentBtn" onclick="initiatePayment()">
+            💳 Rozpocznij Test Płatności
+        </button>
+
+        <div class="spinner" id="spinner"></div>
+        
+        <div id="statusMessage"></div>
+        
+        <div class="log-output" id="logOutput"></div>
+
+        <div class="test-cards">
+            <h3>🔐 Karty Testowe</h3>
+            <p><strong>VISA Debit:</strong> 4410947715337430</p>
+            <p>Data ważności: 12/26, CVV: 287</p>
+            <p><strong>BLIK:</strong> 777777</p>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const logOutput = document.getElementById('logOutput');
+            logOutput.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ef5350' : type === 'success' ? '#66bb6a' : '#aed581';
+            logOutput.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+
+        async function initiatePayment() {
+            const btn = document.getElementById('paymentBtn');
+            const spinner = document.getElementById('spinner');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            statusMessage.innerHTML = '';
+            
+            log('🚀 Inicjalizacja płatności...', 'info');
+            
+            try {
+                log('📡 Wysyłanie żądania do API...', 'info');
+                const response = await fetch('https://borgtools.ddns.net/bramkamvp/api/payments/initiate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        goal_id: 'church',
+                        amount: 10.00,
+                        donor_name: 'Test User',
+                        donor_email: 'test@example.com',
+                        organization_id: 'misjonarze-tarnow',
+                        is_anonymous: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log(`✅ Płatność przygotowana! Order ID: ${data.order_id}`, 'success');
+                log(`📝 Otrzymano ${Object.keys(data.form_data).length} pól formularza`, 'info');
+                log(`🔐 Hash: ${data.form_data.hashExtended.substring(0, 20)}...`, 'info');
+                
+                statusMessage.innerHTML = `
+                    <div class="status-box">
+                        <strong>✅ Sukces!</strong><br>
+                        Order ID: ${data.order_id}<br>
+                        Przekierowanie do Fiserv za 3 sekundy...
+                    </div>
+                `;
+                
+                // Create form
+                log('📋 Tworzenie formularza...', 'info');
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = data.form_url;
+                form.style.display = 'none';
+                
+                // Add all fields
+                Object.entries(data.form_data).forEach(([key, value]) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                    
+                    if (key !== 'hashExtended') {
+                        log(`  • ${key}: ${value.length > 50 ? value.substring(0, 50) + '...' : value}`, 'info');
+                    }
+                });
+                
+                document.body.appendChild(form);
+                
+                // Submit after delay
+                log('⏳ Czekam 3 sekundy przed przekierowaniem...', 'info');
+                setTimeout(() => {
+                    log('🚀 Przekierowanie do bramki Fiserv!', 'success');
+                    form.submit();
+                }, 3000);
+                
+            } catch (error) {
+                log(`❌ Błąd: ${error.message}`, 'error');
+                statusMessage.innerHTML = `
+                    <div class="status-box error">
+                        <strong>❌ Błąd!</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+                btn.disabled = false;
+            } finally {
+                spinner.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Debug Fiserv Form</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #333;
+            color: white;
+        }
+        .hash-info {
+            background: #fffbf0;
+            padding: 20px;
+            border: 2px solid #ffa726;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .warning {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        input[readonly] {
+            background: #f0f0f0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Fiserv Form - EXACT DATA</h1>
+    
+    <div class="hash-info">
+        <h2>Hash Calculation:</h2>
+        <p><strong>Algorithm:</strong> HMAC-SHA256</p>
+        <p><strong>Data to sign:</strong> storename + txndatetime + chargetotal + currency</p>
+        <p><strong>Data:</strong> 7609959992025:08:12-08:52:0010.00985</p>
+        <p><strong>HMAC Key:</strong> j}2W3P)Lwv</p>
+        <p><strong>Expected Hash:</strong> Will be calculated when form is generated</p>
+    </div>
+    
+    <form id="fiservForm" method="POST" action="https://test.ipg-online.com/connect/gateway/processing">
+        <table>
+            <thead>
+                <tr>
+                    <th>Field Name</th>
+                    <th>Value</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>txntype</td>
+                    <td><input type="text" name="txntype" value="sale" readonly></td>
+                    <td>Transaction type</td>
+                </tr>
+                <tr>
+                    <td>timezone</td>
+                    <td><input type="text" name="timezone" value="Europe/Warsaw" readonly></td>
+                    <td>Must be Europe/Warsaw</td>
+                </tr>
+                <tr>
+                    <td>txndatetime</td>
+                    <td><input type="text" name="txndatetime" id="txndatetime" value="" readonly></td>
+                    <td>Format: YYYY:MM:DD-HH:MM:SS</td>
+                </tr>
+                <tr>
+                    <td>hash_algorithm</td>
+                    <td><input type="text" name="hash_algorithm" value="HMACSHA256" readonly></td>
+                    <td>Must be HMACSHA256</td>
+                </tr>
+                <tr>
+                    <td>hash</td>
+                    <td><input type="text" name="hash" id="hash" value="" readonly style="width: 100%;"></td>
+                    <td>HMAC-SHA256 hash</td>
+                </tr>
+                <tr>
+                    <td>storename</td>
+                    <td><input type="text" name="storename" value="760995999" readonly></td>
+                    <td>Store ID</td>
+                </tr>
+                <tr>
+                    <td>chargetotal</td>
+                    <td><input type="text" name="chargetotal" value="10.00" readonly></td>
+                    <td>Amount with 2 decimals</td>
+                </tr>
+                <tr>
+                    <td>currency</td>
+                    <td><input type="text" name="currency" value="985" readonly></td>
+                    <td>PLN code</td>
+                </tr>
+                <tr>
+                    <td>checkoutoption</td>
+                    <td><input type="text" name="checkoutoption" value="combinedpage" readonly></td>
+                    <td>REQUIRED: combinedpage</td>
+                </tr>
+                <tr>
+                    <td>oid</td>
+                    <td><input type="text" name="oid" id="oid" value="" readonly></td>
+                    <td>Order ID</td>
+                </tr>
+                <tr>
+                    <td>responseSuccessURL</td>
+                    <td><input type="text" name="responseSuccessURL" value="https://borgtools.ddns.net/bramkamvp/payment/success" readonly style="width: 100%;"></td>
+                    <td>Success redirect</td>
+                </tr>
+                <tr>
+                    <td>responseFailURL</td>
+                    <td><input type="text" name="responseFailURL" value="https://borgtools.ddns.net/bramkamvp/payment/failure" readonly style="width: 100%;"></td>
+                    <td>Failure redirect</td>
+                </tr>
+                <tr>
+                    <td>transactionNotificationURL</td>
+                    <td><input type="text" name="transactionNotificationURL" value="https://borgtools.ddns.net/bramkamvp/api/payments/webhooks/fiserv/s2s" readonly style="width: 100%;"></td>
+                    <td>S2S webhook (NOT in hash!)</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <button type="submit">
+            🚀 Submit to Fiserv Test Environment
+        </button>
+    </form>
+    
+    <div class="warning">
+        <h3>⚠️ Test Cards:</h3>
+        <ul>
+            <li><strong>DEBIT:</strong> 4410947715337430, 12/26, CVV: 287</li>
+            <li><strong>BLIK:</strong> 777777</li>
+        </ul>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        // Generate current timestamp in Warsaw timezone
+        function getWarsawTime() {
+            const now = new Date();
+            const warsawTime = new Date(now.toLocaleString("en-US", {timeZone: "Europe/Warsaw"}));
+            
+            const year = warsawTime.getFullYear();
+            const month = String(warsawTime.getMonth() + 1).padStart(2, '0');
+            const day = String(warsawTime.getDate()).padStart(2, '0');
+            const hours = String(warsawTime.getHours()).padStart(2, '0');
+            const minutes = String(warsawTime.getMinutes()).padStart(2, '0');
+            const seconds = String(warsawTime.getSeconds()).padStart(2, '0');
+            
+            return `${year}:${month}:${day}-${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Generate HMAC-SHA256 hash
+        function generateHash() {
+            const storename = "760995999";
+            const txndatetime = document.getElementById('txndatetime').value;
+            const chargetotal = "10.00";
+            const currency = "985";
+            const sharedSecret = "j}2W3P)Lwv";
+            
+            const dataToSign = storename + txndatetime + chargetotal + currency;
+            console.log('Data to sign:', dataToSign);
+            
+            const hash = CryptoJS.HmacSHA256(dataToSign, sharedSecret);
+            const hashHex = hash.toString(CryptoJS.enc.Hex);
+            
+            console.log('Generated hash:', hashHex);
+            return hashHex;
+        }
+        
+        // Initialize form
+        window.onload = function() {
+            const txndatetime = getWarsawTime();
+            document.getElementById('txndatetime').value = txndatetime;
+            document.getElementById('oid').value = 'DEBUG-' + Date.now();
+            
+            const hash = generateHash();
+            document.getElementById('hash').value = hash;
+            
+            console.log('Form initialized with:');
+            console.log('- Timestamp:', txndatetime);
+            console.log('- Hash:', hash);
+        };
+    </script>
+</body>
+</html>
