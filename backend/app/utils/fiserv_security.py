@@ -6,11 +6,18 @@ Full implementation based on IMPLEMENTATION_GUIDE.md
 import hashlib
 import hmac
 import base64
-import json
+import os
+from dotenv import load_dotenv
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime
 import pytz
+
+# Wczytaj zmienne środowiskowe
+load_dotenv()
+
+# Pobierz sekret z zmiennych środowiskowych dla bezpieczeństwa
+FISERV_SHARED_SECRET = os.getenv("FISERV_SHARED_SECRET", "j}2W3P)Lwv")
 
 logger = logging.getLogger(__name__)
 
@@ -249,6 +256,98 @@ FISERV_IP_WHITELIST = [
     # Add actual Fiserv IP ranges from documentation
 ]
 
+def create_hash(params: dict) -> str:
+    """
+    Generuje bezpieczny hash HMAC-SHA256 na podstawie wszystkich parametrów żądania,
+    używając separatora '|' i zwracając w formacie Base64.
+    
+    Args:
+        params (dict): Słownik zawierający wszystkie parametry wysyłane do Fiserv.
+
+    Returns:
+        str: Base64 encoded hash string.
+    """
+    # 1. Usuń pola hash jeśli istnieją
+    params_to_hash = {k: v for k, v in params.items() 
+                      if k not in ['hash', 'hashExtended', 'response_hash', 'notification_hash']}
+    
+    # 2. Posortuj parametry alfabetycznie według kluczy
+    sorted_keys = sorted(params_to_hash.keys())
+    
+    # 3. Stwórz ciąg danych, łącząc wartości w posortowanej kolejności za pomocą separatora '|'
+    data_string = "|".join(str(params_to_hash[key]) for key in sorted_keys)
+    
+    logger.debug(f"Hash calculation - Keys: {sorted_keys}")
+    logger.debug(f"Hash calculation - Data: {data_string[:100]}...")
+    
+    # 4. Oblicz hash HMAC-SHA256 używając sharedSecret jako klucza
+    secret_bytes = FISERV_SHARED_SECRET.encode('utf-8')
+    data_bytes = data_string.encode('utf-8')
+    
+    hashed = hmac.new(secret_bytes, data_bytes, hashlib.sha256)
+    
+    # 5. Zwróć hash w formacie Base64 (NIE hex!)
+    base64_hash = base64.b64encode(hashed.digest()).decode('utf-8')
+    
+    logger.debug(f"Generated Base64 hash: {base64_hash}")
+    
+    return base64_hash
+
+def verify_notification_hash(notification_data: dict) -> bool:
+    """
+    Weryfikuje hash otrzymany w powiadomieniu S2S od Fiserv.
+    
+    Args:
+        notification_data (dict): Dane otrzymane w powiadomieniu.
+
+    Returns:
+        bool: True, jeśli hash jest poprawny, w przeciwnym razie False.
+    """
+    # Znajdź pole z hashem
+    received_hash = None
+    if "response_hash" in notification_data:
+        received_hash = notification_data["response_hash"]
+    elif "notification_hash" in notification_data:
+        received_hash = notification_data["notification_hash"]
+    elif "hashExtended" in notification_data:
+        received_hash = notification_data["hashExtended"]
+    
+    if not received_hash:
+        return False
+    
+    # Metoda 1: Weryfikacja wszystkich pól
+    params_copy = dict(notification_data)
+    for hash_field in ['response_hash', 'notification_hash', 'hash', 'hashExtended']:
+        params_copy.pop(hash_field, None)
+    
+    # Spróbuj z Base64
+    calculated_hash = create_hash(params_copy)
+    if hmac.compare_digest(calculated_hash, received_hash):
+        return True
+    
+    # Metoda 2: Weryfikacja legacy (4 pola bez separatora)
+    if all(k in notification_data for k in ["approval_code", "chargetotal", "currency", "txndatetime"]):
+        fields_for_hash = [
+            notification_data.get("approval_code", ""),
+            notification_data.get("chargetotal", ""),
+            notification_data.get("currency", ""),
+            notification_data.get("txndatetime", "")
+        ]
+        
+        data_string = "".join(str(field) for field in fields_for_hash)
+        
+        secret_bytes = FISERV_SHARED_SECRET.encode('utf-8')
+        data_bytes = data_string.encode('utf-8')
+        
+        calculated_hash_obj = hmac.new(secret_bytes, data_bytes, hashlib.sha256)
+        # Spróbuj hex dla legacy
+        calculated_hash_hex = calculated_hash_obj.hexdigest()
+        
+        if hmac.compare_digest(calculated_hash_hex, received_hash):
+            return True
+    
+    return False
+
 def create_security_handler(config: Dict) -> FiservSecurity:
     """
     Factory function to create FiservSecurity instance
@@ -260,6 +359,6 @@ def create_security_handler(config: Dict) -> FiservSecurity:
         FiservSecurity instance
     """
     return FiservSecurity(
-        shared_secret=config['shared_secret'],
+        shared_secret=config.get('shared_secret', FISERV_SHARED_SECRET),
         store_id=config['store_id']
     )
