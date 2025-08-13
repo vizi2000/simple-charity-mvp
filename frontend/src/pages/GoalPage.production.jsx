@@ -62,9 +62,10 @@ export default function GoalPage() {
           goal_id: goalId,
           amount: parseFloat(amount),
           donor_name: isAnonymous ? 'Anonimowy' : donorName,
-          donor_email: donorEmail,
+          donor_email: isAnonymous ? 'anonymous@example.com' : (donorEmail || 'noemail@example.com'),
           message: message,
-          is_anonymous: isAnonymous
+          is_anonymous: isAnonymous,
+          organization_id: 'misjonarze-tarnow'  // Added missing organization_id
         })
       })
 
@@ -237,7 +238,7 @@ export default function GoalPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
+                    Email <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="email"
@@ -245,7 +246,9 @@ export default function GoalPage() {
                     onChange={(e) => setDonorEmail(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required={!isAnonymous}
+                    placeholder="email@przykład.pl"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Wymagany do potwierdzenia płatności</p>
                 </div>
               </>
             )}
