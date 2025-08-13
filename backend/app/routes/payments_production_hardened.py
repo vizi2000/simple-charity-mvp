@@ -20,6 +20,10 @@ from functools import lru_cache
 import asyncio
 from collections import defaultdict
 import time
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
@@ -31,19 +35,20 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Configuration with validation limits
+# Load from environment variables with defaults for test environment
 FISERV_CONFIG = {
-    'storename': '760995999',
-    'shared_secret': 'j}2W3P)Lwv',
-    'gateway_url': 'https://test.ipg-online.com/connect/gateway/processing',
-    'currency': '985',  # PLN
-    'timezone': 'Europe/Warsaw',
-    'hash_algorithm': 'HMACSHA256',
+    'storename': os.getenv('FISERV_STORE_ID', '760995999'),
+    'shared_secret': os.getenv('FISERV_SHARED_SECRET', 'j}2W3P)Lwv'),
+    'gateway_url': os.getenv('FISERV_GATEWAY_URL', 'https://test.ipg-online.com/connect/gateway/processing'),
+    'currency': os.getenv('FISERV_CURRENCY', '985'),  # PLN
+    'timezone': os.getenv('FISERV_TIMEZONE', 'Europe/Warsaw'),
+    'hash_algorithm': os.getenv('FISERV_HASH_ALGORITHM', 'HMACSHA256'),
     # Payment amount limits (in PLN)
-    'min_amount': 1.00,
-    'max_amount': 5000.00,
+    'min_amount': float(os.getenv('PAYMENT_MIN_AMOUNT', '1.00')),
+    'max_amount': float(os.getenv('PAYMENT_MAX_AMOUNT', '5000.00')),
     # Rate limiting
-    'max_requests_per_minute': 10,
-    'max_requests_per_hour': 100
+    'max_requests_per_minute': int(os.getenv('RATE_LIMIT_PER_MINUTE', '10')),
+    'max_requests_per_hour': int(os.getenv('RATE_LIMIT_PER_HOUR', '100'))
 }
 
 # Storage paths

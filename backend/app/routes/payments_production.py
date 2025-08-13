@@ -16,6 +16,7 @@ import os
 import pytz
 import logging
 import base64
+from dotenv import load_dotenv
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
 
