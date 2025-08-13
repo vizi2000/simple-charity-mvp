@@ -272,9 +272,11 @@ async def initiate_payment(request: InitiatePaymentRequest, req: Request):
         # Always add email (required field now)
         form_params['bmail'] = request.donor_email
         
-        # Add name if not anonymous
-        if not request.is_anonymous and request.donor_name:
-            form_params['bname'] = request.donor_name
+        # Add name - use default if None or empty
+        if not request.is_anonymous:
+            # Ensure we always have a name, even if frontend sends null
+            donor_name = request.donor_name if request.donor_name else "Anonimowy"
+            form_params['bname'] = donor_name
         
         # CRITICAL FIX: Create a copy for hash generation to avoid race condition
         # This ensures we're not modifying the dict while using it
