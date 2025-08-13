@@ -177,7 +177,7 @@ class InitiatePaymentRequest(BaseModel):
     goal_id: str
     amount: float = Field(gt=0, le=100000)
     donor_name: Optional[str] = "Anonimowy"
-    donor_email: Optional[EmailStr] = None
+    donor_email: EmailStr  # Now required - no Optional wrapper
     donor_phone: Optional[str] = None
     message: Optional[str] = None
     is_anonymous: bool = False
@@ -193,6 +193,13 @@ class InitiatePaymentRequest(BaseModel):
         # Ensure maximum 2 decimal places
         if round(v, 2) != v:
             raise ValueError("Amount can have maximum 2 decimal places")
+        return v
+    
+    @validator('donor_email')
+    def validate_email_required(cls, v):
+        """Ensure email is provided and valid"""
+        if not v:
+            raise ValueError("Email address is required for payment processing")
         return v
 
 @router.post("/initiate")

@@ -60,20 +60,26 @@ class FiservIPGClient:
         if notification_url and 'localhost' not in notification_url:
             form_fields['transactionNotificationURL'] = notification_url
             
-        # Add customer info if provided
+        # Generate hash ONLY from required fields (before adding optional fields)
+        hash_fields = {
+            'chargetotal': form_fields['chargetotal'],
+            'currency': form_fields['currency'],
+            'storename': form_fields['storename'],
+            'txndatetime': form_fields['txndatetime']
+        }
+        hash_value = self._generate_hash(hash_fields)
+        form_fields['hashExtended'] = hash_value  # Use hashExtended as per IPG Connect docs
+        
+        # Add customer info AFTER hash generation (these are NOT included in hash)
         if customer_info:
             if customer_info.get('name'):
                 form_fields['bname'] = customer_info['name']
             if customer_info.get('email'):
-                form_fields['bemail'] = customer_info['email']
+                form_fields['bmail'] = customer_info['email']  # Changed from 'bemail' to 'bmail'
                 
         # Add payment method specific fields
         if payment_method == 'blik':
             form_fields['blikPayment'] = 'true'
-            
-        # Generate hash using all form fields
-        hash_value = self._generate_hash(form_fields)
-        form_fields['hashExtended'] = hash_value  # Use hashExtended as per IPG Connect docs
         
         logger.debug(f"Generated form data for payment {order_id}, hash: {hash_value[:20]}...")
         
