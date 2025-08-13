@@ -246,7 +246,7 @@ async def initiate_payment(request: InitiatePaymentRequest, req: Request):
         # Determine environment URLs
         base_url = "https://borgtools.ddns.net/bramkamvp"
         
-        # Build ALL form parameters FIRST
+        # Build ALL form parameters FIRST (including optional fields)
         form_params = {
             'txntype': 'sale',
             'timezone': FISERV_CONFIG['timezone'],
@@ -263,17 +263,22 @@ async def initiate_payment(request: InitiatePaymentRequest, req: Request):
             'transactionNotificationURL': f'{base_url}/api/payments/webhooks/fiserv/s2s'
         }
         
-        # Add optional customer fields if not anonymous
-        if not request.is_anonymous:
-            if request.donor_email:
-                form_params['bmail'] = request.donor_email
-            if request.donor_name:
-                form_params['bname'] = request.donor_name
+        # Add optional customer fields BEFORE hash generation
+        # Always add email (required field now)
+        form_params['bmail'] = request.donor_email
         
-        # Generate hash with ALL fields
-        hash_value = generate_fiserv_hash(form_params, FISERV_CONFIG['shared_secret'])
+        # Add name if not anonymous
+        if not request.is_anonymous and request.donor_name:
+            form_params['bname'] = request.donor_name
         
-        # Add hash to form data
+        # CRITICAL FIX: Create a copy for hash generation to avoid race condition
+        # This ensures we're not modifying the dict while using it
+        params_for_hash = dict(form_params)  # Create a clean copy
+        
+        # Generate hash with the copy
+        hash_value = generate_fiserv_hash(params_for_hash, FISERV_CONFIG['shared_secret'])
+        
+        # Now safely add hash to the original form data
         form_params['hashExtended'] = hash_value
         
         # Create payment record with enhanced metadata
